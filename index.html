@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduChain — Децентрализованная верификация</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    .soft-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .tab-btn.active {
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
+
+  <!-- ЭКРАН ВХОДА -->
+  <div id="authScreen" class="fixed inset-0 bg-[#0b0f19] z-50 flex items-center justify-center p-4">
+    <div class="soft-card w-full max-w-md rounded-3xl p-8 space-y-6">
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 bg-sky-500/10 border border-sky-500/20 rounded-2xl mx-auto flex items-center justify-center text-sky-400 font-bold text-lg">
+          ⛓️
+        </div>
+        <h1 class="text-xl font-bold text-white">EduChain</h1>
+        <p class="text-xs text-slate-400">Выберите роль для доступа к децентрализованному реестру</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" onclick="setRole('student')" id="btnStudent" class="p-3.5 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-center text-xs font-semibold text-white transition">
+          🎓 Ученик
+        </button>
+        <button type="button" onclick="setRole('teacher')" id="btnTeacher" class="p-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 text-center text-xs font-semibold text-slate-400 hover:text-white transition">
+          🏫 Преподаватель
+        </button>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4 pt-1">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5">Ваше ФИО</label>
+          <input type="text" id="authName" required placeholder="Иванов Алексей" class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5" id="authGroupLabel">Класс / Группа</label>
+          <input type="text" id="authGroup" required placeholder="10 «А» класс" class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition">
+        </div>
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3.5 rounded-2xl text-sm transition shadow-lg shadow-sky-600/20">
+          Войти в систему
+        </button>
+      </form>
+
+      <div class="pt-3 border-t border-slate-800 text-center space-y-2">
+        <p class="text-[11px] text-slate-400">Быстрый вход для презентации:</p>
+        <div class="flex gap-2 justify-center">
+          <button type="button" onclick="demoLogin('student')" class="text-xs bg-slate-900 hover:bg-slate-800 text-sky-400 border border-slate-800 px-3 py-1.5 rounded-xl transition">
+            Демо Ученик
+          </button>
+          <button type="button" onclick="demoLogin('teacher')" class="text-xs bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-800 px-3 py-1.5 rounded-xl transition">
+            Демо Преподаватель
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+  <div id="appContainer" class="hidden min-h-screen flex flex-col justify-between w-full">
+
+    <header class="soft-card border-b border-slate-800/80 sticky top-0 z-40">
+      <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center text-sky-400 font-bold">
+            EC
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-white">EduChain</span>
+              <span class="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded-full font-semibold" id="headerRoleBadge">Ученик</span>
+            </div>
+            <p class="text-xs text-slate-400">Sepolia L2 Testnet</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <div class="text-right hidden sm:block">
+            <div class="text-xs font-semibold text-white" id="headerName">Имя</div>
+            <div class="text-[10px] text-slate-400" id="headerGroup">Группа</div>
+          </div>
+          <button onclick="logout()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3.5 py-2 rounded-xl text-xs transition">
+            Выйти
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="max-w-5xl mx-auto px-6 pt-6 w-full">
+      <div class="soft-card p-1.5 rounded-2xl flex gap-2 text-xs font-semibold">
+        <button onclick="switchTab('profile')" id="nav-profile" class="tab-btn active flex-1 py-3 px-4 rounded-xl transition text-center border border-transparent">
+          👤 Личный кабинет (SBT)
+        </button>
+        <button onclick="switchTab('verify')" id="nav-verify" class="flex-1 py-3 px-4 rounded-xl transition text-center text-slate-400 hover:text-white border border-transparent">
+          🔍 Проверить документ
+        </button>
+        <button onclick="switchTab('issuer')" id="nav-issuer" class="flex-1 py-3 px-4 rounded-xl transition text-center text-slate-400 hover:text-white border border-transparent" style="display:none;" id="issuerTabBtn">
+          ⚡ Эмиссия (Учитель)
+        </button>
+      </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-6 py-8 flex-grow w-full space-y-6">
+
+      <!-- ВКЛАДКА 1: ПРОФИЛЬ -->
+      <div id="tab-content-profile" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="soft-card rounded-3xl p-6 space-y-4 h-fit">
+            <div class="w-16 h-16 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center text-sky-400 font-bold text-lg" id="profileInitials">
+              УЧ
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-white" id="profileName">Имя</h2>
+              <p class="text-xs text-sky-400 font-medium mt-0.5" id="profileRole">Роль</p>
+              <p class="text-xs text-slate-400 mt-0.5" id="profileGroup">Группа</p>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-400">Сетевой адрес:</span><span class="font-mono text-slate-300">0x4F...9B12</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Токенов SBT:</span><span class="font-semibold text-emerald-400" id="tokenCount">2</span></div>
+            </div>
+
+            <button onclick="openModal()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 rounded-2xl text-xs transition shadow-lg shadow-sky-600/20">
+              + Добавить награду
+            </button>
+          </div>
+
+          <div class="lg:col-span-2 space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Ваши Soulbound-токены (ERC-5192)</h3>
+              <span class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Защищено на блокчейне</span>
+            </div>
+            <div class="space-y-3" id="tokensList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 2: ПРОВЕРКА -->
+      <div id="tab-content-verify" class="space-y-6 hidden">
+        <div class="soft-card rounded-3xl p-8 max-w-2xl mx-auto space-y-6">
+          <div class="text-center space-y-2">
+            <h2 class="text-xl font-bold text-white">Проверка подлинности документа</h2>
+            <p class="text-xs text-slate-400">Скопируйте любой тестовый пример ниже или введите номер вручную.</p>
+          </div>
+
+          <div class="flex gap-2">
+            <input type="text" id="verifyInput" placeholder="Введите ID (например, SBT-84920)" class="flex-grow bg-slate-950/80 border border-slate-800 text-slate-200 text-xs px-4 py-3 rounded-2xl focus:outline-none focus:border-sky-500 font-mono">
+            <button onclick="verifyDoc()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-6 py-3 rounded-2xl transition">Проверить</button>
+          </div>
+
+          <!-- Готовые зашифрованные примеры для копирования и теста -->
+          <div class="space-y-2.5 pt-2 border-t border-slate-800">
+            <p class="text-xs font-semibold text-slate-400">Примеры зашифрованных документов (нажмите, чтобы скопировать и проверить):</p>
+            <div class="grid grid-cols-1 gap-2">
+              <div onclick="copyAndTest('SBT-84920')" class="p-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer transition flex justify-between items-center">
+                <div>
+                  <div class="text-xs font-bold text-emerald-400">✓ SBT-84920 (Аттестат с отличием)</div>
+                  <div class="text-[11px] text-slate-400">Владелец: Ищенко Григорий • Школа № 460</div>
+                </div>
+                <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-1 rounded">Копировать</span>
+              </div>
+
+              <div onclick="copyAndTest('SBT-55102')" class="p-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer transition flex justify-between items-center">
+                <div>
+                  <div class="text-xs font-bold text-emerald-400">✓ SBT-55102 (Диплом олимпиады)</div>
+                  <div class="text-[11px] text-slate-400">Владелец: Быстров Степан • Департамент образования</div>
+                </div>
+                <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-1 rounded">Копировать</span>
+              </div>
+
+              <div onclick="copyAndTest('FAKE-99999')" class="p-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer transition flex justify-between items-center">
+                <div>
+                  <div class="text-xs font-bold text-rose-400">❌ FAKE-99999 (Поддельный документ)</div>
+                  <div class="text-[11px] text-slate-400">Тест системы на обнаружение фальсификации</div>
+                </div>
+                <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-1 rounded">Копировать</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="verifyResult" class="hidden pt-2"></div>
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 3: ЭМИССИЯ -->
+      <div id="tab-content-issuer" class="space-y-6 hidden">
+        <div class="soft-card rounded-3xl p-8 max-w-2xl mx-auto space-y-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">Эмиссия нового SBT-документа</h2>
+            <p class="text-xs text-slate-400">Выпуск защищенного диплома от лица школы.</p>
+          </div>
+
+          <form onsubmit="handleIssue(event)" class="space-y-4 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">ФИО получателя</label>
+              <input type="text" id="issueName" required placeholder="Петров Сергей" class="w-full bg-slate-950/80 border border-slate-800 text-slate-200 px-4 py-3 rounded-2xl">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">Название документа / курса</label>
+              <input type="text" id="issueTitle" required placeholder="Диплом по программированию" class="w-full bg-slate-950/80 border border-slate-800 text-slate-200 px-4 py-3 rounded-2xl">
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl transition">
+              Выпустить в блокчейн ⚡
+            </button>
+          </form>
+
+          <div id="issueLog" class="hidden p-4 bg-slate-950/80 border border-slate-800 rounded-2xl text-emerald-400 text-xs font-mono"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="soft-card border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+      EduChain Decentralized Platform • 2026
+    </footer>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ -->
+  <div id="rewardModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="soft-card w-full max-w-md rounded-3xl p-6 space-y-4">
+      <h3 class="text-base font-bold text-white">Добавить личную награду</h3>
+
+      <form onsubmit="addRewardSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1 font-semibold">Название</label>
+          <input type="text" id="modalTitle" required placeholder="Сертификат по математике" class="w-full bg-slate-950/80 border border-slate-800 text-slate-200 px-3.5 py-2.5 rounded-xl">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1 font-semibold">Организация</label>
+          <input type="text" id="modalIssuer" required placeholder="Образовательный центр" class="w-full bg-slate-950/80 border border-slate-800 text-slate-200 px-3.5 py-2.5 rounded-xl">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal()" class="bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl font-semibold">Отмена</button>
+          <button type="submit" class="bg-sky-600 text-white px-5 py-2.5 rounded-xl font-semibold">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // База данных для верификации
+    const registryDB = {
+      "SBT-84920": { valid: true, name: "Ищенко Григорий Сергеевич", title: "Аттестат о среднем общем образовании (с отличием)", issuer: "ГБОУ Школа № 460", date: "15.06.2025", hash: "0x4f82a1...9b12" },
+      "SBT-55102": { valid: true, name: "Быстров Степан Юрьевич", title: "Диплом призера городской олимпиады", issuer: "Департамент образования", date: "20.12.2025", hash: "0x9a33f1...2c88" }
+    };
+
+    let session = {
+      role: 'student',
+      name: '',
+      group: '',
+      tokens: [
+        { id: 'SBT-84920', title: 'Аттестат о среднем общем образовании', issuer: 'ГБОУ Школа № 460', date: '2025', hash: '0x4f82...9b12' }
+      ]
+    };
+
+    function setRole(role) {
+      session.role = role;
+      if (role === 'student') {
+        document.getElementById('btnStudent').className = 'p-3.5 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-center text-xs font-semibold text-white transition';
+        document.getElementById('btnTeacher').className = 'p-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 text-center text-xs font-semibold text-slate-400 hover:text-white transition';
+        document.getElementById('authGroupLabel').innerText = 'Класс / Группа';
+        document.getElementById('authGroup').placeholder = '10 «А» класс';
+      } else {
+        document.getElementById('btnTeacher').className = 'p-3.5 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-center text-xs font-semibold text-white transition';
+        document.getElementById('btnStudent').className = 'p-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 text-center text-xs font-semibold text-slate-400 hover:text-white transition';
+        document.getElementById('authGroupLabel').innerText = 'Должность / Кафедра';
+        document.getElementById('authGroup').placeholder = 'Учитель информатики';
+      }
+    }
+
+    function demoLogin(role) {
+      if (role === 'student') {
+        session = { role: 'student', name: 'Ищенко Григорий', group: '10 «Н» класс', tokens: [
+          { id: 'SBT-84920', title: 'Аттестат с отличием', issuer: 'ГБОУ Школа № 460', date: '2025', hash: '0x4f82...9b12' }
+        ]};
+      } else {
+        session = { role: 'teacher', name: 'Владимир Олегович', group: 'Учитель информатики', tokens: [
+          { id: 'SBT-00101', title: 'Аккредитация эксперта Web3', issuer: 'Минобрнауки', date: '2024', hash: '0x99aa...5566' }
+        ]};
+      }
+      startApp();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      session.name = document.getElementById('authName').value.trim();
+      session.group = document.getElementById('authGroup').value.trim();
+      if (!session.name || !session.group) return;
+      startApp();
+    }
+
+    function startApp() {
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+
+      document.getElementById('headerName').innerText = session.name;
+      document.getElementById('headerGroup').innerText = session.group;
+      document.getElementById('headerRoleBadge').innerText = session.role === 'student' ? 'Ученик' : 'Преподаватель';
+
+      document.getElementById('profileName').innerText = session.name;
+      document.getElementById('profileRole').innerText = session.role === 'student' ? 'Ученик' : 'Преподаватель / Эмитент';
+      document.getElementById('profileGroup').innerText = session.group;
+      document.getElementById('profileInitials').innerText = session.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'УЧ';
+
+      document.getElementById('issuerTabBtn').style.display = session.role === 'teacher' ? 'block' : 'none';
+      renderTokens();
+    }
+
+    function logout() {
+      document.getElementById('appContainer').classList.add('hidden');
+      document.getElementById('authScreen').classList.remove('hidden');
+    }
+
+    function switchTab(tab) {
+      ['profile', 'verify', 'issuer'].forEach(t => {
+        document.getElementById('tab-content-' + t).classList.add('hidden');
+        document.getElementById('nav-' + t).classList.remove('active');
+        document.getElementById('nav-' + t).classList.add('text-slate-400');
+      });
+      document.getElementById('tab-content-' + tab).classList.remove('hidden');
+      document.getElementById('nav-' + tab).classList.add('active');
+      document.getElementById('nav-' + tab).classList.remove('text-slate-400');
+    }
+
+    function renderTokens() {
+      const container = document.getElementById('tokensList');
+      document.getElementById('tokenCount').innerText = session.tokens.length;
+      container.innerHTML = session.tokens.map(t => `
+        <div class="soft-card p-4 rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">SBT</span>
+              <h4 class="text-xs font-semibold text-white">${t.title}</h4>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">${t.issuer} • ${t.date}</p>
+            <p class="text-[10px] font-mono text-slate-500 mt-0.5">Hash: ${t.hash}</p>
+          </div>
+          <button onclick="quickTest('${t.id}')" class="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 px-3.5 py-2 rounded-xl border border-slate-700 transition">Проверить</button>
+        </div>
+      `).join('');
+    }
+
+    function openModal() { document.getElementById('rewardModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('rewardModal').classList.add('hidden'); }
+
+    function addRewardSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('modalTitle').value.trim();
+      const issuer = document.getElementById('modalIssuer').value.trim();
+      if (!title || !issuer) return;
+
+      const newId = 'SBT-' + Math.floor(10000 + Math.random() * 90000);
+      const newToken = {
+        id: newId,
+        title: title,
+        issuer: issuer,
+        date: '2026',
+        hash: '0x' + Math.random().toString(16).substring(2, 10) + '...'
+      };
+
+      // Добавляем в глобальную базу для проверки и в профиль
+      registryDB[newId] = {
+        valid: true,
+        name: session.name,
+        title: title,
+        issuer: issuer,
+        date: '2026',
+        hash: newToken.hash
+      };
+
+      session.tokens.push(newToken);
+      closeModal();
+      renderTokens();
+      e.target.reset();
+      alert('Награда успешно добавлена и защищена в блокчейне!');
+    }
+
+    function copyAndTest(id) {
+      navigator.clipboard.writeText(id);
+      document.getElementById('verifyInput').value = id;
+      verifyDoc();
+    }
+
+    function quickTest(id) {
+      switchTab('verify');
+      document.getElementById('verifyInput').value = id;
+      verifyDoc();
+    }
+
+    function verifyDoc() {
+      const val = document.getElementById('verifyInput').value.trim().toUpperCase();
+      const res = document.getElementById('verifyResult');
+      res.classList.remove('hidden');
+
+      const doc = registryDB[val];
+
+      if (doc && doc.valid) {
+        res.innerHTML = `
+          <div class="soft-card p-5 rounded-2xl border-emerald-500/40 space-y-3 text-xs">
+            <div class="text-emerald-400 font-bold flex items-center gap-2 text-sm">
+              <span>✓</span> Документ подлинный (Verified on-chain)
+            </div>
+            <div class="space-y-1.5 text-slate-300 pt-1 border-t border-slate-800">
+              <p><b>Владелец:</b> ${doc.name}</p>
+              <p><b>Документ:</b> ${doc.title}</p>
+              <p><b>Эмитент:</b> ${doc.issuer}</p>
+              <p><b>Дата выдачи:</b> ${doc.date}</p>
+              <p><b>Хэш блокчейна:</b> <span class="font-mono text-sky-400">${doc.hash}</span></p>
+            </div>
+          </div>
+        `;
+      } else {
+        res.innerHTML = `
+          <div class="soft-card p-5 rounded-2xl border-rose-500/40 space-y-2 text-xs">
+            <div class="text-rose-400 font-bold flex items-center gap-2 text-sm">
+              <span>✕</span> Документ не найден или поддельный
+            </div>
+            <p class="text-slate-300">Идентификатор <b>${val || 'пусто'}</b> отсутствует в распределенном реестре. Возможна попытка фальсификации.</p>
+          </div>
+        `;
+      }
+    }
+
+    function handleIssue(e) {
+      e.preventDefault();
+      const name = document.getElementById('issueName').value;
+      const title = document.getElementById('issueTitle').value;
+      const newId = 'SBT-' + Math.floor(10000 + Math.random() * 90000);
+
+      registryDB[newId] = {
+        valid: true,
+        name: name,
+        title: title,
+        issuer: 'ГБОУ Школа № 460',
+        date: '2026',
+        hash: '0x' + Math.random().toString(16).substring(2, 10) + '...'
+      };
+
+      const log = document.getElementById('issueLog');
+      log.classList.remove('hidden');
+      log.innerHTML = `✓ Успешно! Выпущен SBT для <b>${name}</b>.<br>ID для проверки: <span class="text-sky-400">${newId}</span>`;
+      e.target.reset();
+    }
+  </script>
+</body>
+</html>
